@@ -1,13 +1,54 @@
-import { Outlet } from "react-router-dom";
-import NavBar from "./components/NavBar";
+import * as React from 'react';
+import * as ReactDOM from 'react-dom/client';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from 'react-router-dom';
+import App from './App';
+import Book from './components/pages/BookForm';
+import BookList from './components/pages/BookList';
 
-const App = () => {
-  return (
-    <div className="w-full p-6">
-      <NavBar />
-      <Outlet />
-    </div>
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <App />,
+    children: [
+      {
+        path: '/',
+        element: <BookList />,
+      },
+    ],
+  },
+  {
+    path: '/edit/:id',
+    element: <App />,
+    children: [
+      {
+        path: '/edit/:id',
+        element: <Book />,
+      },
+    ],
+  },
+  {
+    path: '/create',
+    element: <App />,
+    children: [
+      {
+        path: '/create',
+        element: <Book />,
+      },
+    ],
+  },
+]);
+
+const rootElement = document.getElementById('root');
+
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <RouterProvider router={router} />
+    </React.StrictMode>
   );
-};
-
-export default App;
+} else {
+  console.error('Root element not found');
+}
