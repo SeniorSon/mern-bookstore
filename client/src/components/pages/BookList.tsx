@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Book } from "../../types/book";
+import { Book } from "../../types/Book";
 import BookRow from "../ui/BookRow";
-import { Table, TableHeader, TableBody, TableHead, TableRow } from "../ui/table";
+import { Table, TableHeader, TableBody, TableHead, TableRow } from "../ui/Table";
 
 export default function BookList() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -34,6 +34,7 @@ export default function BookList() {
       const response = await fetch(`http://localhost:3000/books/${id}`, {
         method: "DELETE",
       });
+      console.log(response)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

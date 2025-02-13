@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "../../lib/Utils";
 
 export const Table = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <table className={cn("min-w-full table-auto", className)}>{children}</table>

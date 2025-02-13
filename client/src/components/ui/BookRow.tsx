@@ -1,7 +1,7 @@
-import { Book } from "../../types/book";
+import { Book } from "../../types/Book";
 import { Link } from "react-router-dom";
-import { Button } from "./button";
-import { TableRow, TableCell } from "./table";
+import { Button } from "./Button";
+import { TableRow, TableCell } from "./Table";
 
 interface BookRowProps {
   book: Book;

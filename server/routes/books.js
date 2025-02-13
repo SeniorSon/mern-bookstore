@@ -61,7 +61,7 @@ router.patch("/:id", async(req, res) => {
 });
 
 // Delete a record by id.
-router.delete(":id", async(req, res) => {
+router.delete("/:id", async(req, res) => {
     try {
         let query = { _id: new ObjectId(req.params.id)};
        

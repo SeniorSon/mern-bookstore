@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MultiSelect } from "../MultiSelect";
-import { Book } from "../../types/book";
+import { Book } from "../../types/Book";
 
 const INITIAL_BOOK_STATE: Omit<Book, "_id"> = {
   title: "",
@@ -32,8 +32,10 @@ export default function BookForm() {
   const navigate = useNavigate();
   const isEditMode = Boolean(params.id);
 
+
   useEffect(() => {
     if (isEditMode) {
+      console.log(`Mode: ${isEditMode}`);
       fetchBook();
     }
   }, [params.id]);
