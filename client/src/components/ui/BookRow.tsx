@@ -24,12 +24,12 @@ const BookRow = ({ book, onDelete }: BookRowProps) => (
         >
           Edit
         </Link>
-        <Button 
-          variant="destructive" 
-          className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+        <Button
+          variant="destructive"
+          className="px-3 py-1 text-sm"
           onClick={() => onDelete(book._id)}
         >
-          Delete
+        Delete
         </Button>
       </div>
     </TableCell>

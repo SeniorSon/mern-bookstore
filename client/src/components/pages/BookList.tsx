@@ -34,7 +34,6 @@ export default function BookList() {
       const response = await fetch(`http://localhost:3000/books/${id}`, {
         method: "DELETE",
       });
-      console.log(response)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

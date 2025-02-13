@@ -13,7 +13,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={cn(
-        "px-4 py-2 text-white rounded-md transition",
+       "px-4 py-2 text-white rounded-md transition appearance-none border-none",
         variant === "destructive" ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600",
         className
       )}

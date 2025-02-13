@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MultiSelect } from "../MultiSelect";
 import { Book } from "../../types/Book";
@@ -13,14 +13,7 @@ const INITIAL_BOOK_STATE: Omit<Book, "_id"> = {
 };
 
 const GENRE_OPTIONS = [
-  "Fiction",
-  "Non-Fiction",
-  "Science Fiction",
-  "Fantasy",
-  "Mystery",
-  "Biography",
-  "History",
-  "Science",
+  "Fiction", "Non-Fiction", "Science Fiction", "Fantasy", "Mystery", "Biography", "History", "Science"
 ];
 
 export default function BookForm() {
@@ -32,17 +25,11 @@ export default function BookForm() {
   const navigate = useNavigate();
   const isEditMode = Boolean(params.id);
 
-
-  useEffect(() => {
-    if (isEditMode) {
-      console.log(`Mode: ${isEditMode}`);
-      fetchBook();
-    }
-  }, [params.id]);
-
-  const fetchBook = async () => {
+  const fetchBook = useCallback(async () => {
+    if (!params.id) return;
     try {
       setIsLoading(true);
+      setError(null);
       const response = await fetch(`http://localhost:3000/books/${params.id}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const book = await response.json();
@@ -53,7 +40,13 @@ export default function BookForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id, navigate]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      fetchBook();
+    }
+  }, [fetchBook, isEditMode]);
 
   const updateForm = (value: Partial<typeof form>) => {
     setForm((prev) => ({ ...prev, ...value }));
@@ -63,18 +56,15 @@ export default function BookForm() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
       const url = isEditMode
         ? `http://localhost:3000/books/${params.id}`
         : "http://localhost:3000/books";
-
       const response = await fetch(url, {
         method: isEditMode ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       navigate("/");
     } catch (error) {
@@ -87,90 +77,93 @@ export default function BookForm() {
   if (isLoading) return <div className="p-6 text-xl">Loading...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h3 className="text-2xl font-bold mb-6">
-        {isEditMode ? "Edit Book" : "Create New Book"}
-      </h3>
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
+        <h3 className="text-2xl font-bold mb-6 text-gray-800">
+          {isEditMode ? "Edit Book" : "Create New Book"}
+        </h3>
+        {error && <div className="text-red-600 p-4 bg-red-100 rounded-md mb-4">{error}</div>}
+        
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-lg font-semibold text-gray-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => updateForm({ title: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        {error && <div className="text-red-600 p-4 bg-red-100 rounded-md">{error}</div>}
+            <div>
+              <label className="block text-lg font-semibold text-gray-700 mb-1">Author</label>
+              <input
+                type="text"
+                value={form.author}
+                onChange={(e) => updateForm({ author: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Title</label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => updateForm({ title: e.target.value })}
-              className="w-full px-4 py-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-1">Rating</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="1"
+                  value={form.rating}
+                  onChange={(e) => updateForm({ rating: parseFloat(e.target.value) })}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-1">Pages</label>
+                <input
+                  type="number"
+                  value={form.pages}
+                  onChange={(e) => updateForm({ pages: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-lg font-semibold text-gray-700 mb-1">Genres</label>
+              <MultiSelect
+                options={GENRE_OPTIONS}
+                values={form.genres}
+                onChange={(genres) => updateForm({ genres })}
+                // className="w-full border rounded-lg"
+                placeholder="Select genres..."
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Author</label>
-            <input
-              type="text"
-              value={form.author}
-              onChange={(e) => updateForm({ author: e.target.value })}
-              className="w-full px-4 py-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-3 text-lg bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {isLoading ? "Saving..." : "Save Book"}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="px-6 py-3 text-lg border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Cancel
+            </button>
           </div>
-
-          <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Rating</label>
-            <input
-              type="number"
-              min="0"
-              max="10"
-              step="1"
-              value={form.rating}
-              onChange={(e) => updateForm({ rating: parseFloat(e.target.value) })}
-              className="w-full px-4 py-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Pages</label>
-            <input
-              type="text"
-              value={form.pages}
-              onChange={(e) => updateForm({ pages: e.target.value })}
-              className="w-full px-4 py-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Genres</label>
-            <MultiSelect
-              options={GENRE_OPTIONS}
-              values={form.genres}
-              onChange={(genres) => updateForm({ genres })}
-              placeholder="Select genres..."
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-6">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-6 py-3 text-lg bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {isLoading ? "Saving..." : "Save Book"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="px-6 py-3 text-lg border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
