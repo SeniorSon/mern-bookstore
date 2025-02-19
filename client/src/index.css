@@ -1,3 +1,35 @@
-@import "tailwindcss";
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+@import 'tailwindcss';
+
+/*customizations */
+@theme {
+  --deepblue-500: #023047;
+  --amber-500: #fb8500;
+  --alabaster-500: #e0e1dd;
+}
+
+.bg-deepblue {
+  background-color: var(--deepblue-500);
+}
+
+.bg-amber {
+  background-color: var(--amber-500);
+}
+
+.text-alabaster{
+  color: var(--alabaster-500);
+}
+
+.text-amber{
+  color: var(--amber-500);
+}
+
+@utility container {
+  padding: 20px;
+  max-width: 1920px;
+  margin: auto;
+}
+
+@source './node_modules/some-third-party-lib/**/*.css';
+
+@plugin 'tailwindcss-animate';
+

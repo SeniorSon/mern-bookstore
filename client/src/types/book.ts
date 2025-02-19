@@ -1,9 +1,6 @@
-export interface Review {
-    name: string;
-    body: string;
-  }
-  
-  export interface Book {
+import { Review } from "./review";
+
+export interface Book {
     _id: string;
     title: string;
     author: string;
@@ -11,4 +8,4 @@ export interface Review {
     pages: number;
     genres: string[];
     reviews: Review[];
-  }
+}

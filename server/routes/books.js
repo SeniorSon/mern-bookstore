@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
-// Get all records.
+// Get all books.
 router.get("/", async(req, res) => {
     let collection = await db.collection("books");
     let results = await collection.find({}).toArray();
@@ -12,7 +12,7 @@ router.get("/", async(req, res) => {
     res.send(results).status(200);
 });
 
-// Get a single record by id.
+// Get a single book by id.
 router.get("/:id", async(req, res)=> {
     let collection = await db.collection("books");
     let query = { _id: new ObjectId(req.params.id)};
@@ -22,7 +22,7 @@ router.get("/:id", async(req, res)=> {
     else res.send(result).status(200);
 });
 
-// Create a new record.
+// Create a new book.
 router.post("/", async(req, res) => {
     try {
         let book = {
@@ -44,7 +44,7 @@ router.post("/", async(req, res) => {
     }
 });
 
-// Update a record by id.
+// Update a book by id.
 router.patch("/:id", async(req, res) => {
     try {
         let query = { _id: new ObjectId(req.params.id) };
@@ -60,7 +60,7 @@ router.patch("/:id", async(req, res) => {
     }
 });
 
-// Delete a record by id.
+// Delete a book by id.
 router.delete("/:id", async(req, res) => {
     try {
         let query = { _id: new ObjectId(req.params.id)};

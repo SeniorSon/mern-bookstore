@@ -1,54 +1,40 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from 'react-router-dom';
-import App from './App';
-import Book from './components/pages/BookForm';
-import BookList from './components/pages/BookList';
+import * as React from "react";
+import * as ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import App from "./App";
+import BookForm from "./components/pages/BookForm"
+import BookList from "./components/pages/BookList";
+import "./index.css";
 
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <App />,
     children: [
       {
-        path: '/',
+        path: "/",
         element: <BookList />,
       },
-    ],
-  },
-  {
-    path: '/edit/:id',
-    element: <App />,
-    children: [
       {
-        path: '/edit/:id',
-        element: <Book />,
+        path: "create",
+        element: <BookForm />,
       },
-    ],
-  },
-  {
-    path: '/create',
-    element: <App />,
-    children: [
       {
-        path: '/create',
-        element: <Book />,
+        path: "edit/:id",
+        element: <BookForm />,
       },
     ],
   },
 ]);
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById("root");
 
-if (rootElement) {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <RouterProvider router={router} />
-    </React.StrictMode>
-  );
-} else {
-  console.error('Root element not found');
+if (!rootElement) {
+  throw new Error("Root element not found");
 }
+
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);

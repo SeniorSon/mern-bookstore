@@ -1,169 +1,352 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MultiSelect } from "../MultiSelect";
-import { Book } from "../../types/Book";
+import { Book } from "../../types/book";
+import { Review } from "../../types/review";
 
-const INITIAL_BOOK_STATE: Omit<Book, "_id"> = {
+interface BookFormData extends Omit<Book, '_id'> {
+  _id?: string;
+}
+
+interface ReviewFormData {
+  name: string;
+  body: string;
+}
+
+const initialFormState: BookFormData = {
   title: "",
   author: "",
   rating: 0,
   pages: 0,
   genres: [],
-  reviews: [],
+  reviews: []
 };
 
-const GENRE_OPTIONS = [
-  "Fiction", "Non-Fiction", "Science Fiction", "Fantasy", "Mystery", "Biography", "History", "Science"
-];
+const initialReviewState: ReviewFormData = {
+  name: "",
+  body: ""
+};
 
 export default function BookForm() {
-  const [form, setForm] = useState<Omit<Book, "_id">>(INITIAL_BOOK_STATE);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const [form, setForm] = useState<BookFormData>(initialFormState);
+  const [genreInput, setGenreInput] = useState("");
+  const [reviewForm, setReviewForm] = useState<ReviewFormData>(initialReviewState);
+  const [isNew, setIsNew] = useState(true);
   const params = useParams();
   const navigate = useNavigate();
-  const isEditMode = Boolean(params.id);
-
-  const fetchBook = useCallback(async () => {
-    if (!params.id) return;
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch(`http://localhost:3000/books/${params.id}`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const book = await response.json();
-      setForm(book);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-      navigate("/");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [params.id, navigate]);
 
   useEffect(() => {
-    if (isEditMode) {
-      fetchBook();
+    async function fetchData() {
+      const id = params.id?.toString();
+      if (!id) return;
+      
+      setIsNew(false);
+      try {
+        const response = await fetch(`http://localhost:3000/books/${id}`);
+        if (!response.ok) {
+          throw new Error(`An error occurred: ${response.statusText}`);
+        }
+        const book = await response.json();
+        if (!book) {
+          console.warn(`Book with id ${id} not found`);
+          navigate("/");
+          return;
+        }
+        setForm(book);
+      } catch (error) {
+        console.error("Error fetching book:", error);
+        navigate("/");
+      }
     }
-  }, [fetchBook, isEditMode]);
+    fetchData();
+  }, [params.id, navigate]);
 
-  const updateForm = (value: Partial<typeof form>) => {
+  function updateForm(value: Partial<BookFormData>) {
     setForm((prev) => ({ ...prev, ...value }));
-  };
+  }
 
-  const onSubmit = async (e: React.FormEvent) => {
+  function addGenre(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    try {
-      const url = isEditMode
-        ? `http://localhost:3000/books/${params.id}`
-        : "http://localhost:3000/books";
-      const response = await fetch(url, {
-        method: isEditMode ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      navigate("/");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+    if (genreInput.trim()) {
+      updateForm({ genres: [...form.genres, genreInput.trim()] });
+      setGenreInput("");
     }
-  };
+  }
 
-  if (isLoading) return <div className="p-6 text-xl">Loading...</div>;
+  function removeGenre(genreToRemove: string) {
+    updateForm({
+      genres: form.genres.filter((genre) => genre !== genreToRemove)
+    });
+  }
+
+  function addReview(e: React.FormEvent) {
+    e.preventDefault();
+    if (reviewForm.name.trim() && reviewForm.body.trim()) {
+      updateForm({
+        reviews: [...form.reviews, {
+          name: reviewForm.name.trim(),
+          body: reviewForm.body.trim()
+        }]
+      });
+      setReviewForm(initialReviewState);
+    }
+  }
+
+  function removeReview(reviewToRemove: Review) {
+    updateForm({
+      reviews: form.reviews.filter(
+        review => review.name !== reviewToRemove.name || review.body !== reviewToRemove.body
+      )
+    });
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const response = await fetch(
+        isNew ? "http://localhost:3000/books" : `http://localhost:3000/books/${params.id}`,
+        {
+          method: isNew ? "POST" : "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error saving book:", error);
+    } finally {
+      setForm(initialFormState);
+      navigate("/");
+    }
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
-        <h3 className="text-2xl font-bold mb-6 text-gray-800">
-          {isEditMode ? "Edit Book" : "Create New Book"}
-        </h3>
-        {error && <div className="text-red-600 p-4 bg-red-100 rounded-md mb-4">{error}</div>}
-        
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-4">
+    <div className="container mx-auto px-4 py-6">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+        {isNew ? "Add New Book" : "Edit Book"}
+      </h3>
+      <form onSubmit={onSubmit} className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Book Information
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Please provide the book's details below.
+            </p>
+          </div>
+
+          <div className="grid gap-6">
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-1">Title</label>
+              <label
+                htmlFor="title"
+                className="block text-sm font-medium text-gray-900 mb-2"
+              >
+                Title
+              </label>
               <input
                 type="text"
+                id="title"
+                className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
                 value={form.title}
                 onChange={(e) => updateForm({ title: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-1">Author</label>
+              <label
+                htmlFor="author"
+                className="block text-sm font-medium text-gray-900 mb-2"
+              >
+                Author
+              </label>
               <input
                 type="text"
+                id="author"
+                className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
                 value={form.author}
                 onChange={(e) => updateForm({ author: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-1">Rating</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="1"
-                  value={form.rating}
-                  onChange={(e) => updateForm({ rating: parseFloat(e.target.value) })}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-1">Pages</label>
-                <input
-                  type="number"
-                  value={form.pages}
-                  onChange={(e) => updateForm({ pages: parseInt(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-1">Genres</label>
-              <MultiSelect
-                options={GENRE_OPTIONS}
-                values={form.genres}
-                onChange={(genres) => updateForm({ genres })}
-                // className="w-full border rounded-lg"
-                placeholder="Select genres..."
+              <label
+                htmlFor="rating"
+                className="block text-sm font-medium text-gray-900 mb-2"
+              >
+                Rating (1-10)
+              </label>
+              <input
+                type="number"
+                id="rating"
+                min="1"
+                max="10"
+                className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
+                value={form.rating}
+                onChange={(e) => updateForm({ rating: Number(e.target.value) })}
+                required
               />
             </div>
-          </div>
 
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-3 text-lg bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {isLoading ? "Saving..." : "Save Book"}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="px-6 py-3 text-lg border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Cancel
-            </button>
+            <div>
+              <label
+                htmlFor="pages"
+                className="block text-sm font-medium text-gray-900 mb-2"
+              >
+                Number of Pages
+              </label>
+              <input
+                type="number"
+                id="pages"
+                min="1"
+                className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
+                value={form.pages}
+                onChange={(e) => updateForm({ pages: Number(e.target.value) })}
+                required
+              />
+            </div>
+
+            {/* Genres Section */}
+            <div>
+              <label
+                htmlFor="genres"
+                className="block text-sm font-medium text-gray-900 mb-2"
+              >
+                Genres
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  id="genres"
+                  className="flex-1 rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
+                  value={genreInput}
+                  onChange={(e) => setGenreInput(e.target.value)}
+                  placeholder="Add a genre"
+                />
+                <button
+                  type="button"
+                  onClick={addGenre}
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-gray-900
+                  bg-white border border-gray-200 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-offset-2
+                  focus-visible:outline-gray-500 transition-colors"
+                >
+                  Add Genre
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.genres.map((genre, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"
+                  >
+                    {genre}
+                    <button
+                      type="button"
+                      onClick={() => removeGenre(genre)}
+                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="md:col-span-2 mt-8">
+          <div className="border-t border-gray-200 pt-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Reviews</h2>
+            
+            {/* Add Review Form */}
+            <div className="grid gap-4 mb-6">
+              <div>
+                <label
+                  htmlFor="reviewName"
+                  className="block text-sm font-medium text-gray-900 mb-2"
+                >
+                  Reviewer Name
+                </label>
+                <input
+                  type="text"
+                  id="reviewName"
+                  className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
+                  value={reviewForm.name}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter reviewer name"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="reviewBody"
+                  className="block text-sm font-medium text-gray-900 mb-2"
+                >
+                  Review
+                </label>
+                <textarea
+                  id="reviewBody"
+                  rows={3}
+                  className="w-full rounded-lg border-gray-200 shadow-sm focus:border-gray-500 focus:ring-gray-500"
+                  value={reviewForm.body}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, body: e.target.value }))}
+                  placeholder="Write your review here"
+                />
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={addReview}
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-gray-900
+                  bg-white border border-gray-200 shadow-sm hover:bg-gray-50 focus-visible:outline focus-visible:outline-offset-2
+                  focus-visible:outline-gray-500 transition-colors"
+                >
+                  Add Review
+                </button>
+              </div>
+            </div>
+
+            {/* Review List */}
+            <div className="space-y-4">
+              {form.reviews.map((review, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 rounded-lg p-4 relative"
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeReview(review)}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  >
+                    ×
+                  </button>
+                  <h4 className="font-medium text-gray-900">{review.name}</h4>
+                  <p className="mt-1 text-gray-600">{review.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-end">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white
+            bg-gray-900 hover:bg-gray-800 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-gray-900
+            transition-colors"
+          >
+            {isNew ? "Create Book" : "Update Book"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
