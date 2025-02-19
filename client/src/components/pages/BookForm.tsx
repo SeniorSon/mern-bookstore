@@ -38,8 +38,7 @@ export default function BookForm() {
     async function fetchData() {
       const id = params.id?.toString();
       if (!id) return;
-      
-      setIsNew(false);
+  
       try {
         const response = await fetch(`http://localhost:3000/books/${id}`);
         if (!response.ok) {
@@ -52,11 +51,13 @@ export default function BookForm() {
           return;
         }
         setForm(book);
+        setIsNew(false);
       } catch (error) {
         console.error("Error fetching book:", error);
         navigate("/");
       }
     }
+  
     fetchData();
   }, [params.id, navigate]);
 
@@ -101,18 +102,22 @@ export default function BookForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+  
+    const formData = { ...form };
+    delete formData._id;
+  
     try {
       const response = await fetch(
-        isNew ? "http://localhost:3000/books" : `http://localhost:3000/books/${params.id}`,
+        isNew ? "http://localhost:3000/books/" : `http://localhost:3000/books/${params.id}`,
         {
           method: isNew ? "POST" : "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify(formData),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
